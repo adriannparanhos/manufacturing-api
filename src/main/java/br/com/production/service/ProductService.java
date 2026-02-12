@@ -77,4 +77,16 @@ public class ProductService {
 
         return new ProductDTO(product.getId(), product.getName(), product.getSalesValue(), dto.compositions());
     }
+
+    @Transactional
+    public void delete(Long id) {
+        Product product = productRepository.findById(id);
+        if (product == null) {
+            throw new NotFoundException("Produto não encontrado");
+        }
+
+        compositionRepository.delete("product.id", id);
+
+        productRepository.delete(product);
+    }
 }

@@ -31,4 +31,17 @@ public class ProductResource {
             return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
         }
     }
+
+    @DELETE
+    @Path("/{id}")
+    public Response delete(@PathParam("id") Long id) {
+        try {
+            service.delete(id);
+            return Response.noContent().build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("Não é possível excluir produto que já possui histórico de produção.")
+                    .build();
+        }
+    }
 }
