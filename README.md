@@ -1,77 +1,92 @@
-# manufacturing-api
+# 🏭 Manufacturing API
 
-This project uses Quarkus, the Supersonic Subatomic Java Framework.
+API REST desenvolvida como parte do teste técnico para a vaga de Full Stack. O sistema gerencia o controle de produção, estoques de matérias-primas e cálculo de planejamento produtivo.
 
-If you want to learn more about Quarkus, please visit its website: <https://quarkus.io/>.
+## 🚀 Tecnologias Utilizadas
 
-## Running the application in dev mode
+- **Java 21**
+- **Quarkus Framework** (Core, REST, Hibernate ORM Panache)
+- **Oracle Database** (via Docker)
+- **JUnit 5 & Mockito** (Testes Unitários)
+- **Docker** (Infraestrutura de Banco de Dados)
 
-You can run your application in dev mode that enables live coding using:
+## ⚙️ Pré-requisitos
 
-```shell script
-./mvnw quarkus:dev
+Para executar este projeto, você precisará de:
+
+- **JDK 21** instalado.
+- **Docker** rodando na sua máquina (para o Banco de Dados).
+- **Maven**
+
+## 🗄️ Configuração do Banco de Dados (Docker)
+
+O projeto utiliza o Oracle Database XE. Para subir o banco de dados rapidamente, execute o seguinte comando no seu terminal:
+
+```bash
+docker run -d --name oracle-db \
+  -e ORACLE_PASSWORD=oracle \
+  -p 1521:1521 \
+  gvenzl/oracle-xe
 ```
 
-> **_NOTE:_**  Quarkus now ships with a Dev UI, which is available in dev mode only at <http://localhost:8080/q/dev/>.
+# 🛠️ Como Rodar a Aplicação
+Clone o repositório e entre na pasta:
 
-## Packaging and running the application
+````bash
+git clone <URL_DO_SEU_REPOSITORIO>
+cd manufacturing-api
+````
 
-The application can be packaged using:
+Inicie a aplicação em modo de desenvolvimento: Este modo habilita o Live Reload e logs detalhados.
 
-```shell script
-./mvnw package
-```
+# 🔌 Documentação dos Endpoints
+Abaixo estão as principais rotas disponíveis na API.
 
-It produces the `quarkus-run.jar` file in the `target/quarkus-app/` directory.
-Be aware that it’s not an _über-jar_ as the dependencies are copied into the `target/quarkus-app/lib/` directory.
+## 📦 Produtos (/products)
+Gerencia os itens produzidos pela fábrica e suas receitas.
 
-The application is now runnable using `java -jar target/quarkus-app/quarkus-run.jar`.
+| Método | Endpoint         | Descrição                                                                 |
+|--------|------------------|---------------------------------------------------------------------------|
+| GET    | /products        | Lista todos os produtos e suas receitas.                                  |
+| POST   | /products        | Cria um novo produto com sua composição (ingredientes).                   |
+| DELETE | /products/{id}   | Remove um produto. (Cascade Delete: Remove também a receita e o histórico de produção). |
 
-If you want to build an _über-jar_, execute the following command:
+## 🧱 Matérias-Primas (/raw-materials)
+Gerencia o estoque de insumos.
 
-```shell script
-./mvnw package -Dquarkus.package.jar.type=uber-jar
-```
+| Método | Endpoint              | Descrição                                                  |
+|--------|-----------------------|------------------------------------------------------------|
+| GET    | /raw-materials        | Lista todos os insumos e quantidade em estoque.           |
+| POST   | /raw-materials        | Cria uma nova matéria-prima.                               |
+| DELETE | /raw-materials/{id}   | Remove uma matéria-prima do estoque.                       |
 
-The application, packaged as an _über-jar_, is now runnable using `java -jar target/*-runner.jar`.
+## 📅 Planejamento & Produção (/planning)
+O "cérebro" da aplicação.
 
-## Creating a native executable
-
-You can create a native executable using:
-
-```shell script
-./mvnw package -Dnative
-```
-
-Or, if you don't have GraalVM installed, you can run the native executable build in a container using:
-
-```shell script
-./mvnw package -Dnative -Dquarkus.native.container-build=true
-```
-
-You can then execute your native executable with: `./target/manufacturing-api-1.0.0-SNAPSHOT-runner`
-
-If you want to learn more about building native executables, please consult <https://quarkus.io/guides/maven-tooling>.
-
-## Related Guides
-
-- REST Jackson ([guide](https://quarkus.io/guides/rest#json-serialisation)): Jackson serialization support for Quarkus REST. This extension is not compatible with the quarkus-resteasy extension, or any of the extensions that depend on it
-- Hibernate ORM with Panache ([guide](https://quarkus.io/guides/hibernate-orm-panache)): Simplify your persistence code for Hibernate ORM via the active record or the repository pattern
-- JDBC Driver - Oracle ([guide](https://quarkus.io/guides/datasource)): Connect to the Oracle database via JDBC
-
-## Provided Code
-
-### Hibernate ORM
-
-Create your first JPA entity
-
-[Related guide section...](https://quarkus.io/guides/hibernate-orm)
-
-[Related Hibernate with Panache section...](https://quarkus.io/guides/hibernate-orm-panache)
+| Método | Endpoint     | Descrição |
+|--------|-------------|-----------|
+| GET    | /planning   | Algoritmo Sugestivo: Retorna uma lista automática do que deve ser produzido baseada no estoque atual, priorizando produtos de maior valor agregado (Algoritmo Guloso). |
+| POST   | /planning   | Ordem de Produção: Recebe `{productId, quantity}`, valida se há estoque suficiente, debita os materiais e registra o histórico. Retorna erro 400 se o estoque for insuficiente. |
 
 
-### REST
+# 🧪 Testes Automatizados
+O projeto possui uma suíte de testes robusta cobrindo camadas de serviço e integração.
 
-Easily start your REST Web Services
+Para executar todos os testes:
 
-[Related guide section...](https://quarkus.io/guides/getting-started-reactive#reactive-jax-rs-resources)
+````bash
+./mvnw test
+````
+O que está sendo testado?
+
+### Testes Unitários (ProductionPlanningServiceTest):
+* Utiliza Mockito para simular o banco de dados.
+* Valida a lógica de cálculo de estoque (se impede produção sem insumo).
+* Valida a lógica de priorização de produtos.
+
+### Testes de Integração (PlanningResourceTest):
+* Utiliza RestAssured.
+* obe o contexto do Quarkus e faz requisições HTTP reais para os endpoints.
+* Valida os Status Codes (200, 400, 204) e a estrutura do JSON retornado.
+
+##### **Desenvolvido por Adriann Postigo Paranhos**
