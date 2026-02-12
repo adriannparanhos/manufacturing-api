@@ -31,7 +31,16 @@ public class PlanningResource {
                     .entity("Produto e Quantidade válida são obrigatórios").build();
         }
 
-        ProductionPlanDTO plan = planningService.calculateSpecificPlan(request.productId(), request.quantity());
-        return Response.ok(plan).build();
+        try {
+            ProductionPlanDTO plan = planningService.calculateSpecificPlan(request.productId(), request.quantity());
+            return Response.ok(plan).build();
+
+        } catch (IllegalArgumentException e) {
+            return Response.status(Response.Status.BAD_REQUEST)
+                    .entity(new ErrorResponse(e.getMessage()))
+                    .build();
+        }
     }
+
+    public record ErrorResponse(String message) {}
 }

@@ -16,13 +16,16 @@ public class ProductionPlanningService {
     private final ProductRepository productRepository;
     private final RawMaterialRepository materialRepository;
     private final ProductCompositionRepository compositionRepository;
+    private final ProductionOrderRepository orderRepository;
 
     public ProductionPlanningService(ProductRepository productRepo,
                                      RawMaterialRepository materialRepo,
-                                     ProductCompositionRepository compRepo) {
+                                     ProductCompositionRepository compRepo,
+                                     ProductionOrderRepository orderRepo) {
         this.productRepository = productRepo;
         this.materialRepository = materialRepo;
         this.compositionRepository = compRepo;
+        this.orderRepository = orderRepo;
     }
 
     @Transactional
@@ -63,16 +66,29 @@ public class ProductionPlanningService {
         if (product == null) throw new NotFoundException("Produto não encontrado");
 
         List<ProductComposition> recipe = compositionRepository.findByProduct(productId);
+        if (recipe.isEmpty()) {
+            throw new IllegalArgumentException("Este produto não possui receita cadastrada.");
+        }
 
         for (ProductComposition item : recipe) {
-            BigDecimal required = item.getQuantityRequired().multiply(new BigDecimal(quantity));
+            BigDecimal requiredPerUnit = item.getQuantityRequired();
+            BigDecimal totalRequired = requiredPerUnit.multiply(new BigDecimal(quantity));
 
-            if (!item.getRawMaterial().hasSufficientStock(required)) {
-                System.out.println("Aviso: Estoque insuficiente de " + item.getRawMaterial().getName());
+            if (!item.getRawMaterial().hasSufficientStock(totalRequired)) {
+                BigDecimal stock = item.getRawMaterial().getStockQuantity();
+                throw new IllegalArgumentException(String.format(
+                        "Estoque insuficiente de %s. Necessário: %s, Disponível: %s",
+                        item.getRawMaterial().getName(),
+                        totalRequired,
+                        stock
+                ));
             }
         }
 
         BigDecimal totalValue = product.getSalesValue().multiply(new BigDecimal(quantity));
+
+        ProductionOrder order = new ProductionOrder(product, quantity, totalValue);
+        orderRepository.persist(order);
 
         return new ProductionPlanDTO(
                 product.getName(),
