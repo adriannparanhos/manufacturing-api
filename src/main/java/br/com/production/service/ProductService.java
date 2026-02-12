@@ -9,8 +9,8 @@ import br.com.production.domain.repository.RawMaterialRepository;
 import br.com.production.rest.dto.ProductCompositionDTO;
 import br.com.production.rest.dto.ProductDTO;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
+import jakarta.ws.rs.NotFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -18,33 +18,44 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class ProductService {
 
-    @Inject
-    ProductRepository productRepository;
+    private final ProductRepository productRepository;
+    private final RawMaterialRepository materialRepository;
+    private final ProductCompositionRepository compositionRepository;
 
-    @Inject
-    RawMaterialRepository materialRepository;
+    public ProductService(ProductRepository productRepository,
+                          RawMaterialRepository materialRepository,
+                          ProductCompositionRepository compositionRepository) {
+        this.productRepository = productRepository;
+        this.materialRepository = materialRepository;
+        this.compositionRepository = compositionRepository;
+    }
 
-    @Inject
-    ProductCompositionRepository compositionRepository;
-
+    @Transactional
     public List<ProductDTO> listAll() {
         return productRepository.listAll().stream().map(product -> {
-            List<ProductComposition> compositions = compositionRepository.findByProduct(product.id);
+            List<ProductComposition> compositions = compositionRepository.findByProduct(product.getId());
 
             List<ProductCompositionDTO> compositionDTOS = compositions.stream()
-                    .map(c -> new ProductCompositionDTO(c.rawMaterial.id, c.rawMaterial.name, c.quantityRequired))
+                    .map(c -> new ProductCompositionDTO(
+                            c.getRawMaterial().getId(),
+                            c.getRawMaterial().getName(),
+                            c.getQuantityRequired()
+                    ))
                     .collect(Collectors.toList());
 
-            return new ProductDTO(product.id, product.name, product.salesValue, compositionDTOS);
+            return new ProductDTO(
+                    product.getId(),
+                    product.getName(),
+                    product.getSalesValue(),
+                    compositionDTOS
+            );
         }).collect(Collectors.toList());
     }
 
     @Transactional
     public ProductDTO create(ProductDTO dto) {
-        Product product = new Product();
-        product.name = dto.name();
-        product.salesValue = dto.salesValue();
-        product.code = "PROD-" + System.currentTimeMillis();
+        Product product = new Product(dto.name(), dto.salesValue());
+
         productRepository.persist(product);
 
         if (dto.compositions() != null) {
@@ -54,16 +65,16 @@ public class ProductService {
                     throw new IllegalArgumentException("Materia prima nao encontrada: " + compDto.materialId());
                 }
 
-                ProductComposition composition = new ProductComposition();
-                composition.product = product;
-                composition.rawMaterial = material;
-                composition.quantityRequired = compDto.quantity();
+                ProductComposition composition = new ProductComposition(
+                        product,
+                        material,
+                        compDto.quantity()
+                );
 
                 compositionRepository.persist(composition);
             }
         }
 
-        return dto;
+        return new ProductDTO(product.getId(), product.getName(), product.getSalesValue(), dto.compositions());
     }
-
 }

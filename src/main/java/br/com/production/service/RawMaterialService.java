@@ -4,7 +4,6 @@ import br.com.production.domain.model.RawMaterial;
 import br.com.production.domain.repository.RawMaterialRepository;
 import br.com.production.rest.dto.RawMaterialDTO;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 
 import java.util.List;
@@ -13,30 +12,34 @@ import java.util.stream.Collectors;
 @ApplicationScoped
 public class RawMaterialService {
 
-    @Inject
-    RawMaterialRepository repository;
+    private final RawMaterialRepository repository;
+
+    public RawMaterialService(RawMaterialRepository repository) {
+        this.repository = repository;
+    }
 
     public List<RawMaterialDTO> listAll() {
         return repository.listAll().stream()
-                .map(entity -> new RawMaterialDTO(entity.id, entity.name, entity.stockQuantity))
+                .map(entity -> new RawMaterialDTO(
+                        entity.getId(),   // Usar Getter
+                        entity.getName(), // Usar Getter
+                        entity.getStockQuantity() // Usar Getter
+                ))
                 .collect(Collectors.toList());
     }
 
     public RawMaterialDTO findById(Long id) {
         RawMaterial entity = repository.findById(id);
         if (entity == null) return null;
-        return new RawMaterialDTO(entity.id, entity.name, entity.stockQuantity);
+        return new RawMaterialDTO(entity.getId(), entity.getName(), entity.getStockQuantity());
     }
 
     @Transactional
     public RawMaterialDTO create(RawMaterialDTO dto) {
-        RawMaterial entity = new RawMaterial();
-        entity.name = dto.name();
-        entity.stockQuantity = dto.stockQuantity();
-        entity.code = "RM-" + System.currentTimeMillis();
+        RawMaterial entity = new RawMaterial(dto.name(), dto.stockQuantity());
 
         repository.persist(entity);
-        return new RawMaterialDTO(entity.id, entity.name, entity.stockQuantity);
+        return new RawMaterialDTO(entity.getId(), entity.getName(), entity.getStockQuantity());
     }
 
     @Transactional
@@ -44,10 +47,9 @@ public class RawMaterialService {
         RawMaterial entity = repository.findById(id);
         if (entity == null) return null;
 
-        entity.name = dto.name();
-        entity.stockQuantity = dto.stockQuantity();
+        entity.updateDetails(dto.name(), dto.stockQuantity());
 
-        return new RawMaterialDTO(entity.id, entity.name, entity.stockQuantity);
+        return new RawMaterialDTO(entity.getId(), entity.getName(), entity.getStockQuantity());
     }
 
     @Transactional
