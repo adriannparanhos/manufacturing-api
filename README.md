@@ -33,7 +33,7 @@ docker run -d --name oracle-db \
 Clone o repositório e entre na pasta:
 
 ````bash
-git clone <URL_DO_SEU_REPOSITORIO>
+git clone <https://github.com/adriannparanhos/manufacturing-api.git>
 cd manufacturing-api
 ````
 
